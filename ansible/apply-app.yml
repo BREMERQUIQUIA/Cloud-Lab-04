@@ -1,0 +1,87 @@
+---
+- name: Configure Cloud-Lab-04 application instances
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    terraform_dir: "../terraform/environments/dev"
+    aws_region: "us-east-1"
+
+  pre_tasks:
+    - name: Get Terraform outputs
+      ansible.builtin.command:
+        cmd: terraform -chdir={{ terraform_dir }} output -json
+      register: terraform_outputs
+      changed_when: false
+
+    - name: Parse Terraform outputs
+      ansible.builtin.set_fact:
+        tf_outputs: "{{ terraform_outputs.stdout | from_json }}"
+
+    - name: Set infrastructure variables
+      ansible.builtin.set_fact:
+        autoscaling_group_name: "{{ tf_outputs.autoscaling_group_name.value }}"
+        db_address: "{{ tf_outputs.db_address.value }}"
+
+    - name: Get healthy Auto Scaling instances
+      ansible.builtin.command:
+        argv:
+          - aws
+          - autoscaling
+          - describe-auto-scaling-groups
+          - --auto-scaling-group-names
+          - "{{ autoscaling_group_name }}"
+          - --region
+          - "{{ aws_region }}"
+          - --query
+          - "AutoScalingGroups[0].Instances[?LifecycleState=='InService' && HealthStatus=='Healthy'].InstanceId"
+          - --output
+          - json
+      register: asg_instances_raw
+      changed_when: false
+
+    - name: Parse application instance IDs
+      ansible.builtin.set_fact:
+        app_instance_ids: "{{ asg_instances_raw.stdout | from_json }}"
+
+    - name: Ensure application instances exist
+      ansible.builtin.assert:
+        that:
+          - app_instance_ids | length >= 2
+        fail_msg: "The Auto Scaling Group does not have at least two healthy instances."
+        success_msg: "Found {{ app_instance_ids | length }} healthy application instances."
+
+    - name: Wait until instances are online in Systems Manager
+      ansible.builtin.command:
+        argv:
+          - aws
+          - ssm
+          - describe-instance-information
+          - --region
+          - "{{ aws_region }}"
+          - --filters
+          - "Key=InstanceIds,Values={{ item }}"
+          - --query
+          - "InstanceInformationList[0].PingStatus"
+          - --output
+          - text
+      loop: "{{ app_instance_ids }}"
+      register: ssm_ping_results
+      changed_when: false
+      retries: 20
+      delay: 15
+      until: ssm_ping_results.stdout == "Online"
+
+  roles:
+    - common
+    - hardening
+    - application
+    - cloudwatch
+
+  post_tasks:
+    - name: Show configuration result
+      ansible.builtin.debug:
+        msg: >-
+          Configuration completed successfully on
+          {{ app_instance_ids | length }} application instances.

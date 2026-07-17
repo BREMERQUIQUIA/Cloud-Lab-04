@@ -1,0 +1,12 @@
+---
+- name: Validate Cloud-Lab-04 infrastructure
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    terraform_dir: "../terraform/environments/dev"
+    aws_region: "us-east-1"
+
+  roles:
+    - validation

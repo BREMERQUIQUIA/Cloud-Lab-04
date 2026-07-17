@@ -1,0 +1,93 @@
+---
+- name: Get Terraform outputs
+  ansible.builtin.command:
+    cmd: terraform -chdir={{ terraform_dir }} output -json
+  register: terraform_outputs
+  changed_when: false
+
+- name: Parse Terraform outputs
+  ansible.builtin.set_fact:
+    tf_outputs: "{{ terraform_outputs.stdout | from_json }}"
+
+- name: Set infrastructure variables
+  ansible.builtin.set_fact:
+    alb_dns_name: "{{ tf_outputs.alb_dns_name.value }}"
+    autoscaling_group_name: "{{ tf_outputs.autoscaling_group_name.value }}"
+    db_address: "{{ tf_outputs.db_address.value }}"
+
+- name: Validate ALB endpoint
+  ansible.builtin.uri:
+    url: "http://{{ alb_dns_name }}"
+    method: GET
+    status_code: 200
+    return_content: true
+  register: alb_result
+
+- name: Show ALB response
+  ansible.builtin.debug:
+    msg: "ALB VALIDATION OK"
+
+- name: Get Auto Scaling instance IDs
+  ansible.builtin.command:
+    cmd: >
+      aws autoscaling describe-auto-scaling-groups
+      --auto-scaling-group-names {{ autoscaling_group_name }}
+      --region {{ aws_region }}
+      --query AutoScalingGroups[0].Instances[*].InstanceId
+      --output json
+  register: asg_instances_raw
+  changed_when: false
+
+- name: Parse Auto Scaling instance IDs
+  ansible.builtin.set_fact:
+    app_instance_ids: "{{ asg_instances_raw.stdout | from_json }}"
+
+- name: Ensure Auto Scaling Group has at least two instances
+  ansible.builtin.assert:
+    that:
+      - app_instance_ids | length >= 2
+    fail_msg: "Auto Scaling Group has fewer than two instances."
+    success_msg: "Auto Scaling Group has {{ app_instance_ids | length }} instances."
+
+- name: Validate SSM status
+  ansible.builtin.command:
+    cmd: >
+      aws ssm describe-instance-information
+      --region {{ aws_region }}
+      --filters Key=InstanceIds,Values={{ item }}
+      --query InstanceInformationList[0].PingStatus
+      --output text
+  loop: "{{ app_instance_ids }}"
+  register: ssm_results
+  changed_when: false
+  failed_when: ssm_results.stdout != "Online"
+
+- name: Validate RDS connectivity from application instances
+  ansible.builtin.shell: |
+    COMMAND_ID=$(aws ssm send-command \
+      --region {{ aws_region }} \
+      --document-name "AWS-RunShellScript" \
+      --instance-ids "{{ item }}" \
+      --parameters "commands=[\"timeout 5 bash -c '</dev/tcp/{{ db_address }}/3306'\"]" \
+      --query "Command.CommandId" \
+      --output text)
+
+    aws ssm wait command-executed \
+      --region {{ aws_region }} \
+      --command-id "$COMMAND_ID" \
+      --instance-id "{{ item }}"
+
+    aws ssm get-command-invocation \
+      --region {{ aws_region }} \
+      --command-id "$COMMAND_ID" \
+      --instance-id "{{ item }}" \
+      --query "Status" \
+      --output text
+  loop: "{{ app_instance_ids }}"
+  register: rds_results
+  changed_when: false
+  failed_when: rds_results.stdout != "Success"
+
+- name: Show final validation result
+  ansible.builtin.debug:
+    msg: "CLOUD-LAB-04 INFRASTRUCTURE VALIDATION SUCCESSFUL"

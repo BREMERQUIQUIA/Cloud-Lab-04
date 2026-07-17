@@ -1,0 +1,102 @@
+# ==================================================
+# Terraform
+# ==================================================
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+
+crash.log
+crash.*.log
+
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+.terraformrc
+terraform.rc
+
+# Terraform variables and backend configuration
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+backend.hcl
+backend.tfvars
+
+# ==================================================
+# Ansible
+# ==================================================
+
+*.retry
+ansible.log
+.ansible/
+vault-password*
+*.vault
+
+# Generated inventory and temporary outputs
+ansible/inventory/generated*
+outputs.json
+
+# ==================================================
+# Credentials, keys and certificates
+# ==================================================
+
+*.pem
+*.key
+*.ppk
+*.p12
+*.pfx
+
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+
+.aws/
+credentials
+
+# ==================================================
+# Environment files
+# ==================================================
+
+.env
+.env.*
+!.env.example
+
+# ==================================================
+# Python
+# ==================================================
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ==================================================
+# Editors and operating systems
+# ==================================================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+.DS_Store
+Thumbs.db
+
+# ==================================================
+# Logs and temporary files
+# ==================================================
+
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
+
+# Terraform generated plan files without extension
+**/tfplan

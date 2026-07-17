@@ -1,0 +1,72 @@
+---
+- name: Define application deployment commands
+  ansible.builtin.set_fact:
+    application_commands:
+      - "TOKEN=$(curl -fsS -X PUT -H 'X-aws-ec2-metadata-token-ttl-seconds: 21600' http://169.254.169.254/latest/api/token)"
+      - "INSTANCE_ID=$(curl -fsS -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/instance-id)"
+      - "AVAILABILITY_ZONE=$(curl -fsS -H \"X-aws-ec2-metadata-token: $TOKEN\" http://169.254.169.254/latest/meta-data/placement/availability-zone)"
+      - "printf '%s\n' '<!DOCTYPE html>' '<html lang=\"en\">' '<head>' '<meta charset=\"UTF-8\">' '<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">' '<title>Cloud-Lab-04</title>' '</head>' '<body>' '<h1>Cloud-Lab-04 Auto Scaling Application</h1>' \"<p>Instance ID: $INSTANCE_ID</p>\" \"<p>Availability Zone: $AVAILABILITY_ZONE</p>\" '<p>Managed with Terraform, Ansible and AWS Systems Manager.</p>' '</body>' '</html>' > /var/www/html/index.html"
+      - "chown root:root /var/www/html/index.html"
+      - "chmod 0644 /var/www/html/index.html"
+      - "nginx -t"
+      - "systemctl restart nginx"
+      - "curl --fail --silent http://localhost/ | grep 'Cloud-Lab-04 Auto Scaling Application'"
+
+- name: Deploy application through Systems Manager
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - send-command
+      - --region
+      - "{{ aws_region }}"
+      - --document-name
+      - AWS-RunShellScript
+      - --instance-ids
+      - "{{ item }}"
+      - --parameters
+      - "{{ {'commands': application_commands} | to_json }}"
+      - --query
+      - Command.CommandId
+      - --output
+      - text
+  loop: "{{ app_instance_ids }}"
+  register: application_ssm_commands
+  changed_when: true
+
+- name: Wait for application deployment
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - wait
+      - command-executed
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+  loop: "{{ application_ssm_commands.results }}"
+  changed_when: false
+
+- name: Validate application deployment status
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - get-command-invocation
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+      - --query
+      - Status
+      - --output
+      - text
+  loop: "{{ application_ssm_commands.results }}"
+  register: application_status_results
+  changed_when: false
+  failed_when: application_status_results.stdout != "Success"

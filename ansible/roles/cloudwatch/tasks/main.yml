@@ -1,0 +1,70 @@
+---
+- name: Define CloudWatch Agent configuration commands
+  ansible.builtin.set_fact:
+    cloudwatch_commands:
+      - "curl -fsSL https://amazoncloudwatch-agent.s3.amazonaws.com/ubuntu/amd64/latest/amazon-cloudwatch-agent.deb -o /tmp/amazon-cloudwatch-agent.deb"
+      - "dpkg -i /tmp/amazon-cloudwatch-agent.deb || apt-get install -f -y"
+      - "mkdir -p /opt/aws/amazon-cloudwatch-agent/etc"
+      - "printf '%s\n' '{' '  \"agent\": {' '    \"metrics_collection_interval\": 60,' '    \"run_as_user\": \"root\"' '  },' '  \"metrics\": {' '    \"append_dimensions\": {' '      \"AutoScalingGroupName\": \"${aws:AutoScalingGroupName}\",' '      \"InstanceId\": \"${aws:InstanceId}\"' '    },' '    \"metrics_collected\": {' '      \"disk\": {' '        \"measurement\": [\"used_percent\"],' '        \"metrics_collection_interval\": 60,' '        \"resources\": [\"*\"]' '      },' '      \"mem\": {' '        \"measurement\": [\"mem_used_percent\"],' '        \"metrics_collection_interval\": 60' '      }' '    }' '  }' '}' > /opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
+      - "/opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json"
+      - "systemctl enable amazon-cloudwatch-agent"
+      - "systemctl is-active amazon-cloudwatch-agent"
+
+- name: Configure CloudWatch Agent through Systems Manager
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - send-command
+      - --region
+      - "{{ aws_region }}"
+      - --document-name
+      - AWS-RunShellScript
+      - --instance-ids
+      - "{{ item }}"
+      - --parameters
+      - "{{ {'commands': cloudwatch_commands} | to_json }}"
+      - --query
+      - Command.CommandId
+      - --output
+      - text
+  loop: "{{ app_instance_ids }}"
+  register: cloudwatch_ssm_commands
+  changed_when: true
+
+- name: Wait for CloudWatch Agent configuration
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - wait
+      - command-executed
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+  loop: "{{ cloudwatch_ssm_commands.results }}"
+  changed_when: false
+
+- name: Validate CloudWatch Agent configuration status
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - get-command-invocation
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+      - --query
+      - Status
+      - --output
+      - text
+  loop: "{{ cloudwatch_ssm_commands.results }}"
+  register: cloudwatch_status_results
+  changed_when: false
+  failed_when: cloudwatch_status_results.stdout != "Success"

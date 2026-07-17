@@ -1,0 +1,72 @@
+---
+- name: Define operating system hardening commands
+  ansible.builtin.set_fact:
+    hardening_commands:
+      - "sed -ri 's/^#?PermitRootLogin .*/PermitRootLogin no/' /etc/ssh/sshd_config"
+      - "sed -ri 's/^#?PasswordAuthentication .*/PasswordAuthentication no/' /etc/ssh/sshd_config"
+      - "sed -ri 's/^#?KbdInteractiveAuthentication .*/KbdInteractiveAuthentication no/' /etc/ssh/sshd_config"
+      - "sed -ri 's/^#?MaxAuthTries .*/MaxAuthTries 3/' /etc/ssh/sshd_config"
+      - "sshd -t"
+      - "systemctl restart ssh || systemctl restart sshd"
+      - "install -m 0644 /dev/null /etc/sysctl.d/99-cloud-lab-04.conf"
+      - "printf '%s\n' 'net.ipv4.conf.all.accept_redirects = 0' 'net.ipv4.conf.default.accept_redirects = 0' 'net.ipv4.conf.all.send_redirects = 0' 'net.ipv4.conf.default.send_redirects = 0' 'net.ipv4.tcp_syncookies = 1' > /etc/sysctl.d/99-cloud-lab-04.conf"
+      - "sysctl --system"
+
+- name: Apply operating system hardening through Systems Manager
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - send-command
+      - --region
+      - "{{ aws_region }}"
+      - --document-name
+      - AWS-RunShellScript
+      - --instance-ids
+      - "{{ item }}"
+      - --parameters
+      - "{{ {'commands': hardening_commands} | to_json }}"
+      - --query
+      - Command.CommandId
+      - --output
+      - text
+  loop: "{{ app_instance_ids }}"
+  register: hardening_ssm_commands
+  changed_when: true
+
+- name: Wait for operating system hardening
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - wait
+      - command-executed
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+  loop: "{{ hardening_ssm_commands.results }}"
+  changed_when: false
+
+- name: Validate operating system hardening status
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - get-command-invocation
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+      - --query
+      - Status
+      - --output
+      - text
+  loop: "{{ hardening_ssm_commands.results }}"
+  register: hardening_status_results
+  changed_when: false
+  failed_when: hardening_status_results.stdout != "Success"

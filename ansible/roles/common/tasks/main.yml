@@ -1,0 +1,70 @@
+---
+- name: Define common configuration commands
+  ansible.builtin.set_fact:
+    common_commands:
+      - "export DEBIAN_FRONTEND=noninteractive"
+      - "apt-get update -y"
+      - "apt-get install -y nginx curl unzip ca-certificates jq fail2ban"
+      - "systemctl enable nginx"
+      - "systemctl restart nginx"
+      - "systemctl enable fail2ban"
+      - "systemctl restart fail2ban"
+
+- name: Run common configuration through Systems Manager
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - send-command
+      - --region
+      - "{{ aws_region }}"
+      - --document-name
+      - AWS-RunShellScript
+      - --instance-ids
+      - "{{ item }}"
+      - --parameters
+      - "{{ {'commands': common_commands} | to_json }}"
+      - --query
+      - Command.CommandId
+      - --output
+      - text
+  loop: "{{ app_instance_ids }}"
+  register: common_ssm_commands
+  changed_when: true
+
+- name: Wait for common configuration commands
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - wait
+      - command-executed
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+  loop: "{{ common_ssm_commands.results }}"
+  changed_when: false
+
+- name: Get common configuration command status
+  ansible.builtin.command:
+    argv:
+      - aws
+      - ssm
+      - get-command-invocation
+      - --region
+      - "{{ aws_region }}"
+      - --command-id
+      - "{{ item.stdout | trim }}"
+      - --instance-id
+      - "{{ item.item }}"
+      - --query
+      - Status
+      - --output
+      - text
+  loop: "{{ common_ssm_commands.results }}"
+  register: common_status_results
+  changed_when: false
+  failed_when: common_status_results.stdout != "Success"
