@@ -107,3 +107,23 @@ output "cloudwatch_dashboard_name" {
   description = "CloudWatch dashboard name"
   value       = module.monitoring.dashboard_name
 }
+
+output "storage_bucket_id" {
+  description = "S3 storage bucket ID"
+  value       = module.storage.bucket_id
+}
+
+output "storage_bucket_arn" {
+  description = "S3 storage bucket ARN"
+  value       = module.storage.bucket_arn
+}
+
+output "storage_bucket_name" {
+  description = "S3 storage bucket name"
+  value       = module.storage.bucket_name
+}
+
+output "storage_bucket_region" {
+  description = "S3 storage bucket region"
+  value       = module.storage.bucket_region
+}
