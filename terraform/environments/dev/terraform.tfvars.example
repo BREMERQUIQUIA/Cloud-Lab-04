@@ -36,7 +36,7 @@ db_name                = "cloudlab04"
 db_username            = "dbadmin"
 backup_retention_period = 1
 
-notification_email = "bremer17_5@hotmail.com"
+notification_email = "example@example.com"
 
 # S3 Storage
 bucket_suffix = "lab2026a"

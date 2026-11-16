@@ -38,9 +38,10 @@ resource "aws_db_instance" "main" {
   publicly_accessible = false
   multi_az            = false
 
-  backup_retention_period = var.backup_retention_period
-  deletion_protection     = false
-  skip_final_snapshot     = true
+  backup_retention_period   = var.backup_retention_period
+  deletion_protection       = false
+  skip_final_snapshot       = false
+  final_snapshot_identifier = "${var.project_name}-${var.environment}-mysql-final"
 
   auto_minor_version_upgrade = true
 
