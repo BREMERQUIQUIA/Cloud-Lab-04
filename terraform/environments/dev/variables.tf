@@ -88,6 +88,18 @@ variable "backup_retention_period" {
   default     = 1
 }
 
+
+variable "bucket_suffix" {
+  description = "Unique suffix for the S3 bucket name"
+  type        = string
+}
+
+variable "noncurrent_version_expiration_days" {
+  description = "Days before noncurrent S3 object versions expire"
+  type        = number
+  default     = 90
+}
+
 variable "notification_email" {
   description = "Email address for CloudWatch and Auto Scaling alerts"
   type        = string
