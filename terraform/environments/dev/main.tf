@@ -87,3 +87,13 @@ module "monitoring" {
   target_group_arn_suffix = module.alb.target_group_arn_suffix
   sns_topic_arn           = module.sns.topic_arn
 }
+
+
+module "storage" {
+  source = "../../modules/storage"
+
+  project_name = var.project_name
+  environment  = var.environment
+  bucket_suffix = var.bucket_suffix
+  noncurrent_version_expiration_days = var.noncurrent_version_expiration_days
+}
