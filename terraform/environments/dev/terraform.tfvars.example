@@ -37,3 +37,6 @@ db_username            = "dbadmin"
 backup_retention_period = 1
 
 notification_email = "bremer17_5@hotmail.com"
+
+# S3 Storage
+bucket_suffix = "lab2026a"
