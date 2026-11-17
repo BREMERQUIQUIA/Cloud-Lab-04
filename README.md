@@ -1,510 +1,269 @@
 # Cloud-Lab-04
 
-## Infraestructura AWS de nivel empresarial con Terraform, Auto Scaling, RDS, ALB, CloudWatch y Ansible
+## AWS Infrastructure Automation with Terraform, Auto Scaling, RDS, ALB, CloudWatch and Ansible
 
-Cloud-Lab-04 es un proyecto de Infraestructura como Código (Infrastructure as Code - IaC) desarrollado en Amazon Web Services (AWS), utilizando Terraform y Ansible.
+Cloud-Lab-04 is an AWS infrastructure automation learning project built with Terraform and Ansible.
 
-El objetivo de este laboratorio es implementar y simular una arquitectura de aplicación web de alta disponibilidad, siguiendo principios y buenas prácticas del AWS Well-Architected Framework.
+The project demonstrates how to provision, configure, monitor, and validate a highly available web application environment across multiple Availability Zones.
 
-El proyecto permite aprovisionar automáticamente la infraestructura, administrar sus componentes y validar su funcionamiento mediante pruebas de despliegue, operación, monitoreo, escalabilidad y recuperación ante fallos.
+It follows production-inspired architectural and operational practices while remaining a learning laboratory.
 
----
+## Project Architecture
 
-## Arquitectura
+The infrastructure was deployed in the AWS `us-east-1` region across two Availability Zones.
 
-La infraestructura implementada incluye:
+Main components:
 
-- Amazon VPC.
-- Subredes públicas y privadas distribuidas en dos zonas de disponibilidad.
-- Internet Gateway.
-- NAT Gateway.
-- Application Load Balancer (ALB).
-- Auto Scaling Group (ASG).
-- Launch Template.
-- Amazon EC2.
-- Amazon RDS MySQL.
-- Amazon S3.
-- Roles y perfiles de IAM.
-- AWS Systems Manager.
-- CloudWatch Dashboard.
-- CloudWatch Alarms.
-- Amazon SNS.
-- Backend remoto de Terraform almacenado en Amazon S3.
+- Amazon VPC with public and private subnets
+- Internet Gateway and NAT Gateway
+- Application Load Balancer
+- EC2 Launch Template
+- Auto Scaling Group
+- Amazon RDS for MySQL
+- IAM roles and instance profiles
+- AWS Systems Manager for instance administration
+- Amazon CloudWatch dashboards and alarms
+- Amazon SNS notifications
+- Amazon S3 storage bucket
+- Remote Terraform state backend hosted in Amazon S3
 
----
-
-## Estructura del repositorio
+## Architecture Diagram
 
 ```text
-Cloud-Lab-04
-│
+                              Internet
+                                  |
+                           Internet Gateway
+                                  |
+                       Application Load Balancer
+                                  |
+                    +-------------+-------------+
+                    |                           |
+              Availability Zone A        Availability Zone B
+                    |                           |
+              Public Subnet               Public Subnet
+                    |                           |
+                 NAT GW A                    NAT GW B
+                    |                           |
+              Private App Subnet          Private App Subnet
+                    |                           |
+                EC2 Instance               EC2 Instance
+                    |                           |
+                    +-------------+-------------+
+                                  |
+                         Private DB Subnets
+                                  |
+                              Amazon RDS
+                               MySQL
+
+       AWS Systems Manager | IAM | CloudWatch | Amazon SNS
+
+       Amazon S3:
+       - Terraform remote state backend
+       - Laboratory application storage bucket
+```
+
+## Repository Structure
+
+```text
+Cloud-Lab-04/
 ├── ansible/
-│
+│   ├── apply-app.yml
+│   ├── validate.yml
+│   └── roles/
+│       ├── application/
+│       ├── cloudwatch/
+│       ├── common/
+│       ├── hardening/
+│       └── validation/
 ├── bootstrap/
-│
-├── docs/
-│
 ├── scripts/
-│
-└── terraform/
-    │
-    ├── environments/
-    │   └── dev/
-    │
-    └── modules/
-        ├── vpc/
-        ├── security/
-        ├── alb/
-        ├── launch-template/
-        ├── autoscaling/
-        ├── rds/
-        ├── monitoring/
-        ├── sns/
-        └── storage/
+│   ├── bootstrap-backend.sh
+│   ├── deploy.sh
+│   ├── destroy.sh
+│   └── validate.sh
+├── terraform/
+│   ├── environments/
+│   │   └── dev/
+│   └── modules/
+│       ├── alb/
+│       ├── autoscaling/
+│       ├── launch-template/
+│       ├── monitoring/
+│       ├── rds/
+│       ├── security/
+│       ├── sns/
+│       ├── storage/
+│       └── vpc/
+├── .gitignore
+└── README.md
 ```
 
----
+## Technologies
 
-## Tecnologías utilizadas
+- AWS
+- Terraform
+- Ansible
+- AWS CLI
+- Amazon EC2
+- Amazon VPC
+- Application Load Balancer
+- EC2 Auto Scaling
+- Amazon RDS for MySQL
+- Amazon S3
+- AWS Systems Manager
+- Amazon CloudWatch
+- Amazon SNS
+- IAM
+- Linux
+- Bash
 
-| Tecnología | Propósito |
-|---|---|
-| Terraform | Aprovisionamiento de infraestructura como código |
-| AWS CLI | Administración de servicios AWS |
-| Ansible | Automatización y configuración de servidores |
-| Amazon VPC | Red virtual privada |
-| Amazon EC2 | Instancias de procesamiento |
-| Auto Scaling | Escalamiento automático |
-| Application Load Balancer | Distribución del tráfico |
-| Amazon RDS MySQL | Base de datos relacional |
-| Amazon S3 | Almacenamiento y backend remoto |
-| Amazon CloudWatch | Monitoreo y alarmas |
-| Amazon SNS | Notificaciones |
-| AWS Systems Manager | Administración de instancias |
-| IAM | Administración de identidades y permisos |
-| Linux | Sistema operativo de los servidores |
-| Bash | Automatización mediante scripts |
+## Key Features
 
----
+- Modular Terraform infrastructure
+- Remote Terraform state stored in Amazon S3
+- Multi-AZ network architecture
+- Public and private subnet segmentation
+- Application Load Balancer for HTTP traffic distribution
+- EC2 Auto Scaling with target tracking
+- Managed MySQL database in private subnets
+- Systems Manager administration without direct SSH access
+- CloudWatch monitoring and alarms
+- SNS notification integration
+- Ansible-based configuration and validation
+- Bash deployment, validation, and cleanup scripts
 
-## Características principales
+## Deployment Workflow
 
-- Arquitectura modular utilizando Terraform.
-- Backend remoto para el estado de Terraform mediante Amazon S3.
-- Arquitectura de red distribuida en dos zonas de disponibilidad.
-- Segmentación de redes públicas y privadas.
-- NAT Gateway para conectividad saliente.
-- Balanceo de carga mediante Application Load Balancer.
-- Escalamiento automático de instancias EC2.
-- Base de datos MySQL en una red privada.
-- Almacenamiento mediante Amazon S3.
-- Monitoreo y alarmas con CloudWatch.
-- Notificaciones mediante Amazon SNS.
-- Administración de instancias mediante Systems Manager.
-- Automatización con scripts Bash.
-- Configuración de servidores mediante Ansible.
-- Validación de infraestructura.
-- Configuración de snapshot final para Amazon RDS.
+The following commands describe the laboratory workflow. Run them from a compatible Bash environment with the required AWS credentials and Terraform and Ansible dependencies configured.
 
----
-
-## Diagrama de infraestructura
-
-```text
-                         INTERNET
-                            |
-                            |
-                    INTERNET GATEWAY
-                            |
-                            |
-                 +----------------------+
-                 | APPLICATION LOAD     |
-                 | BALANCER (ALB)       |
-                 +----------+-----------+
-                            |
-                  +---------+---------+
-                  |                   |
-                  |                   |
-           SUBRED PRIVADA A    SUBRED PRIVADA B
-                  |                   |
-                  |                   |
-             +---------+         +---------+
-             |  EC2 #1 |         |  EC2 #2 |
-             +---------+         +---------+
-                  |                   |
-                  +---------+---------+
-                            |
-                            |
-                   +----------------+
-                   | AMAZON RDS     |
-                   | MYSQL          |
-                   | RED PRIVADA    |
-                   +----------------+
-
-
-              SERVICIOS COMPLEMENTARIOS AWS
-              ==============================
-
-              +-----------------------------+
-              | AMAZON S3                   |
-              |                             |
-              | - Terraform Remote Backend |
-              | - Terraform State           |
-              | - Storage del laboratorio  |
-              +-----------------------------+
-
-              +-----------------------------+
-              | AMAZON CLOUDWATCH           |
-              |                             |
-              | - Dashboard                 |
-              | - Métricas                  |
-              | - Alarmas                   |
-              +-----------------------------+
-
-              +-----------------------------+
-              | AMAZON SNS                  |
-              |                             |
-              | - Notificaciones            |
-              +-----------------------------+
-
-              +-----------------------------+
-              | AWS SYSTEMS MANAGER          |
-              |                             |
-              | - Administración EC2        |
-              | - Session Manager           |
-              | - Ejecución de comandos      |
-              +-----------------------------+
-
-              +-----------------------------+
-              | AWS IAM                     |
-              |                             |
-              | - Roles                     |
-              | - Instance Profiles         |
-              | - Permisos                  |
-              +-----------------------------+
-```
-
-### Componentes de Amazon S3
-
-El proyecto utiliza dos buckets con propósitos diferentes:
-
-**1. Terraform Remote Backend**
-
-Almacena el estado remoto de Terraform (`terraform.tfstate`), permitiendo mantener la información de los recursos administrados por Terraform.
-
-Este bucket se conservó después de destruir la infraestructura principal.
-
-**2. Storage del laboratorio**
-
-Corresponde al módulo de almacenamiento S3 creado mediante Terraform.
-
-Incluye configuraciones de:
-
-- Bloqueo de acceso público.
-- Versionamiento.
-- Cifrado SSE-S3 (AES256).
-- Reglas de ciclo de vida para versiones anteriores.
-
-Este bucket formó parte de los 51 recursos destruidos al finalizar el laboratorio.
-
----
-
-## Despliegue de infraestructura
-
-### 1. Inicialización del backend remoto
+### 1. Bootstrap the Remote Backend
 
 ```bash
 ./scripts/bootstrap-backend.sh
 ```
 
-Este proceso permite preparar el almacenamiento remoto de Terraform en Amazon S3.
-
-### 2. Despliegue de infraestructura
+### 2. Deploy the Infrastructure
 
 ```bash
 ./scripts/deploy.sh
 ```
 
-Ejecuta el proceso de inicialización, planificación y despliegue de los recursos definidos mediante Terraform.
-
-### 3. Validación de infraestructura
+### 3. Configure and Validate
 
 ```bash
 ./scripts/validate.sh
 ```
 
-Permite comprobar el funcionamiento de los componentes desplegados.
-
-### 4. Destrucción de infraestructura
+### 4. Destroy the Laboratory Infrastructure
 
 ```bash
 ./scripts/destroy.sh
 ```
 
-Permite eliminar los recursos administrados por Terraform después de completar las pruebas.
+**Important:** Review the Terraform plan before applying or destroying resources. The deployment can create AWS resources that incur charges.
 
-**Importante:** el backend remoto de Terraform se mantiene separado de los recursos principales del laboratorio.
+## Validation and Test Results
 
----
+The laboratory was deployed and tested. The following results were observed:
 
-## Validación y pruebas realizadas
-
-El laboratorio fue desplegado y validado mediante pruebas operativas, monitoreo y resiliencia.
-
-### 1. Despliegue de infraestructura
-
-Se realizaron las siguientes validaciones:
-
-- Aprovisionamiento de infraestructura mediante módulos Terraform.
-- Ejecución de automatización con Ansible.
-- Validación de conectividad HTTP mediante Application Load Balancer.
-- Acceso a instancias EC2 mediante AWS Systems Manager.
-- Validación de conectividad de red hacia Amazon RDS.
-- Verificación de componentes de monitoreo.
-
-**Resultado:** despliegue y validaciones operativas satisfactorias.
-
-### 2. Prueba de balanceo de carga
-
-Se enviaron solicitudes HTTP mediante el Application Load Balancer.
-
-**Resultados:**
-
-- El tráfico fue distribuido entre diferentes instancias EC2.
-- Se validó la participación de las dos zonas de disponibilidad.
-- Se comprobó la respuesta de la aplicación a través del balanceador.
-
-### 3. Prueba de Auto Scaling
-
-Se generó una carga de trabajo sobre la CPU utilizando `stress-ng`, ejecutado mediante AWS Systems Manager.
-
-**Configuración de la prueba:**
-
-| Parámetro | Valor |
+| Test | Result |
 |---|---|
-| Herramienta | stress-ng |
-| Utilización de CPU objetivo | Aproximadamente 90 % |
-| Duración | 300 segundos |
-| Capacidad inicial deseada | 2 instancias |
+| HTTP traffic through the Application Load Balancer | Successful |
+| Traffic distribution across EC2 instances in two Availability Zones | Verified |
+| CPU load test using `stress-ng` | Executed at approximately 90% CPU for 300 seconds |
+| Auto Scaling scale-out | Desired capacity increased from 2 to 3 |
+| Auto Scaling scale-in | Desired capacity returned from 3 to 2 |
+| Unhealthy EC2 instance replacement | Verified |
+| CloudWatch alarm state | Transitioned to `ALARM` and subsequently returned to `OK` |
+| AWS Systems Manager connectivity | Validated |
+| RDS connectivity | Validated |
 
-**Resultados observados:**
+These results document the tests performed during the laboratory deployment.
 
-- Auto Scaling incrementó la capacidad deseada de 2 a 3 instancias.
-- Después de reducir la carga de trabajo, el grupo Auto Scaling disminuyó nuevamente de 3 a 2 instancias.
-- Se comprobó el funcionamiento del escalamiento horizontal.
+## Security Considerations
 
-### 4. Prueba de recuperación de instancias EC2
+The implementation included the following controls and configurations:
 
-Se simuló una instancia no saludable mediante un fallo en la verificación de estado (Health Check).
+- Private subnets for application and database resources
+- IAM roles and instance profiles for AWS access
+- EC2 Instance Metadata Service Version 2 (IMDSv2)
+- Encrypted EBS volumes
+- Security Groups for network access control
+- AWS Systems Manager Session Manager for instance administration
+- No direct SSH administration in the tested workflow
+- RDS master password managed through AWS Secrets Manager integration
 
-**Resultados:**
+## Terraform State and S3 Storage
 
-- Auto Scaling Group detectó la instancia no saludable.
-- La instancia afectada fue reemplazada automáticamente.
-- Se validó el mecanismo de recuperación automática.
+This project uses two separate S3 purposes:
 
-### 5. Monitoreo con CloudWatch
+1. **Terraform remote state backend:** Stores the Terraform state file and is retained independently of the laboratory infrastructure.
+2. **Laboratory storage bucket:** Created by the Terraform `storage` module and removed when the laboratory infrastructure was destroyed.
 
-Se validaron las alarmas de CloudWatch durante las pruebas de carga.
+Do not delete the remote state backend while it is still required by the Terraform configuration.
 
-**Resultados:**
+## Infrastructure Cleanup and Current Status
 
-- El estado de la alarma cambió a `ALARM` cuando se alcanzaron las condiciones configuradas.
-- Después de la recuperación, el estado de la alarma volvió a `OK`.
-- Se comprobó el funcionamiento del monitoreo de infraestructura.
+The laboratory infrastructure was successfully deployed, validated, and subsequently destroyed.
 
-### 6. Destrucción de infraestructura
-
-Después de completar las pruebas, se ejecutó la destrucción de los recursos mediante Terraform.
-
-**Resultado final:**
+The Terraform destroy operation reported:
 
 ```text
 Apply complete! Resources: 0 added, 0 changed, 51 destroyed.
 ```
 
-Se confirmó la destrucción de los 51 recursos administrados por Terraform.
+The Terraform state was checked after cleanup and contained no managed resources.
 
-### 7. Conservación del snapshot final de RDS
+The following items were retained:
 
-Antes de finalizar el laboratorio, se configuró la creación de un snapshot final de Amazon RDS.
+- Terraform and Ansible source code
+- Git repository and project documentation
+- Remote Terraform state backend in S3
+- Final RDS snapshot: `cloud-lab-04-dev-mysql-final`
 
-El snapshot fue verificado mediante AWS CLI.
+The retained S3 backend and RDS snapshot may continue to incur AWS charges. Review them in the AWS Console and remove them only when they are no longer needed.
 
-**Resultado comprobado:**
+**Project status:** Infrastructure deployment, validation, and cleanup completed. Source code remains available for review and future deployments.
 
-```text
-Snapshot: cloud-lab-04-dev-mysql-final
-Status: available
-Type: manual
-```
+## Skills Demonstrated
 
-El snapshot quedó disponible para futuras pruebas de recuperación y Disaster Recovery.
+- AWS infrastructure provisioning
+- Terraform modules and Infrastructure as Code
+- AWS networking and subnet segmentation
+- High availability and multi-AZ architecture
+- EC2 Auto Scaling
+- Application Load Balancing
+- RDS administration and connectivity validation
+- IAM and Systems Manager
+- CloudWatch monitoring and alarms
+- SNS notifications
+- Ansible configuration management
+- Bash automation
+- Infrastructure testing and cleanup
 
----
+## Future Improvements
 
-## Seguridad
+Potential extensions for future iterations:
 
-El proyecto incorpora las siguientes configuraciones de seguridad:
+- GitHub Actions CI/CD
+- Terraform static analysis and security scanning
+- Ansible linting
+- AWS WAF
+- HTTPS listener and ACM certificates
+- Route 53 integration
+- Centralized logging
+- VPC Flow Logs
+- AWS CloudTrail and Config
+- AWS GuardDuty
+- Container deployment with ECS
+- Multi-region disaster recovery
 
-- Subredes privadas para los recursos de aplicación y base de datos.
-- Roles de IAM y perfiles de instancia.
-- IMDSv2 habilitado.
-- Volúmenes EBS cifrados.
-- Grupos de seguridad (Security Groups).
-- Sin administración SSH directa.
-- AWS Systems Manager Session Manager.
-- Principio de mínimo privilegio.
-- Acceso privado a la base de datos RDS.
-- Backend remoto de Terraform cifrado.
-- Bloqueo de acceso público en el bucket S3 de almacenamiento.
+## License
 
----
+This repository is provided for educational purposes and as a reference for AWS infrastructure automation.
 
-## Competencias técnicas demostradas
-
-Este proyecto permitió desarrollar y validar conocimientos prácticos en:
-
-- Infraestructura como Código (IaC).
-- Desarrollo de módulos Terraform.
-- Redes y conectividad AWS.
-- Arquitecturas de alta disponibilidad.
-- Auto Scaling.
-- Balanceo de carga.
-- Administración de instancias EC2.
-- Administración de bases de datos RDS.
-- Almacenamiento S3.
-- Seguridad en la nube.
-- Administración Linux.
-- AWS Systems Manager.
-- Monitoreo con CloudWatch.
-- Notificaciones mediante SNS.
-- Automatización con Bash.
-- Automatización con Ansible.
-- Administración mediante AWS CLI.
-- Validación de infraestructura.
-- Resolución de problemas operativos.
-- Recuperación automática de servicios.
-
----
-
-## Costos estimados
-
-Este laboratorio fue desarrollado con fines educativos y de aprendizaje.
-
-Los servicios utilizados durante el despliegue pueden generar costos en AWS, entre ellos:
-
-| Servicio | Propósito |
-|---|---|
-| NAT Gateway | Conectividad saliente |
-| Application Load Balancer | Distribución del tráfico |
-| Amazon EC2 | Procesamiento de aplicaciones |
-| Amazon RDS | Base de datos |
-| Amazon S3 | Almacenamiento y estado remoto |
-| Amazon CloudWatch | Monitoreo y alarmas |
-| Amazon SNS | Notificaciones |
-| Elastic IP | Conectividad de red |
-
-La infraestructura principal fue destruida después de completar las pruebas.
-
-**Nota importante:** se conservaron el bucket S3 utilizado como backend remoto de Terraform y el snapshot final de RDS. Estos recursos pueden continuar generando costos de almacenamiento.
-
----
-
-## Mejoras futuras
-
-Las siguientes funcionalidades podrían incorporarse en futuras versiones:
-
-- AWS WAF.
-- AWS Shield.
-- Amazon Route 53.
-- Certificados TLS mediante AWS Certificate Manager (ACM).
-- Listener HTTPS.
-- AWS CodePipeline.
-- AWS CodeBuild.
-- Despliegues Blue/Green.
-- Amazon ECS.
-- Amazon EKS.
-- AWS Secrets Manager.
-- Integración con AWS Systems Manager Parameter Store.
-- AWS CloudTrail.
-- AWS Config.
-- Amazon GuardDuty.
-- VPC Flow Logs.
-- Registro centralizado de logs.
-- Arquitectura Multi-Region.
-- Automatización de recuperación ante desastres (Disaster Recovery).
-- CI/CD mediante GitHub Actions.
-
----
-
-## Capturas y evidencias
-
-Se recomienda incluir en el repositorio las siguientes evidencias:
-
-- Diagrama de arquitectura AWS.
-- Despliegue mediante Terraform.
-- Auto Scaling Group.
-- Application Load Balancer.
-- Panel de CloudWatch.
-- Alarmas de CloudWatch.
-- AWS Systems Manager Session Manager.
-- Amazon RDS.
-- Amazon S3.
-- Notificaciones SNS.
-- Prueba de carga de CPU con stress-ng.
-- Historial de actividades de Auto Scaling.
-- Reemplazo automático de instancia EC2.
-- Resultado de Terraform Destroy.
-- Estado disponible del snapshot final de RDS.
-
----
-
-## Objetivos de aprendizaje
-
-Este proyecto demuestra experiencia práctica en:
-
-- Infraestructura AWS como Código.
-- Arquitecturas de red empresariales.
-- Arquitecturas de alta disponibilidad.
-- Diseño modular con Terraform.
-- Automatización de infraestructura.
-- Administración de configuración.
-- Monitoreo y observabilidad.
-- Buenas prácticas de seguridad.
-- Validación de infraestructura.
-- Auto Scaling y recuperación automática.
-- Administración de servicios AWS.
-- Resolución de problemas operativos.
-
----
-
-## Licencia
-
-Este repositorio se proporciona con fines educativos.
-
-Puede utilizarse como referencia para el aprendizaje de Infraestructura como Código y arquitectura AWS.
-
----
-
-## Autor
+## Author
 
 **Bremer Quiquia**
 
-AWS • Linux • Terraform • Ansible • Infraestructura Cloud • DevOps
-
----
-
-## Estado del proyecto
-
-**COMPLETADO — INFRAESTRUCTURA DESPLEGADA, VALIDADA Y DESTRUIDA.**
-
-Cloud-Lab-04 fue diseñado, desplegado, automatizado y validado satisfactoriamente.
-
-Durante las pruebas se comprobó el funcionamiento del balanceo de carga, escalamiento automático, recuperación de instancias EC2, monitoreo y generación de alertas.
-
-Después de completar las pruebas, los 51 recursos de AWS administrados por Terraform fueron destruidos para evitar costos continuos de infraestructura.
-
-Se conservaron el bucket S3 del backend remoto de Terraform y el snapshot final de Amazon RDS.
-
-El código fuente permanece disponible en GitHub para futuros despliegues, pruebas y mejoras del laboratorio.
+AWS | Linux | Terraform | Ansible | Cloud Infrastructure | DevOps
