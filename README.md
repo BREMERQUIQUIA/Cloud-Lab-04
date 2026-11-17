@@ -40,9 +40,13 @@ Main components:
                     |                           |
               Availability Zone A        Availability Zone B
                     |                           |
-              Public Subnet               Public Subnet
+                Public Subnet              Public Subnet
                     |                           |
-                 NAT GW A                    NAT GW B
+                    +-------------+-------------+
+                                  |
+                              NAT Gateway
+                                  |
+                    +-------------+-------------+
                     |                           |
               Private App Subnet          Private App Subnet
                     |                           |
@@ -66,36 +70,36 @@ Main components:
 
 ```text
 Cloud-Lab-04/
-├── ansible/
-│   ├── apply-app.yml
-│   ├── validate.yml
-│   └── roles/
-│       ├── application/
-│       ├── cloudwatch/
-│       ├── common/
-│       ├── hardening/
-│       └── validation/
-├── bootstrap/
-├── scripts/
-│   ├── bootstrap-backend.sh
-│   ├── deploy.sh
-│   ├── destroy.sh
-│   └── validate.sh
-├── terraform/
-│   ├── environments/
-│   │   └── dev/
-│   └── modules/
-│       ├── alb/
-│       ├── autoscaling/
-│       ├── launch-template/
-│       ├── monitoring/
-│       ├── rds/
-│       ├── security/
-│       ├── sns/
-│       ├── storage/
-│       └── vpc/
-├── .gitignore
-└── README.md
+|-- ansible/
+|   |-- apply-app.yml
+|   |-- validate.yml
+|   `-- roles/
+|       |-- application/
+|       |-- cloudwatch/
+|       |-- common/
+|       |-- hardening/
+|       `-- validation/
+|-- bootstrap/
+|-- scripts/
+|   |-- bootstrap-backend.sh
+|   |-- deploy.sh
+|   |-- destroy.sh
+|   `-- validate.sh
+|-- terraform/
+|   |-- environments/
+|   |   `-- dev/
+|   `-- modules/
+|       |-- alb/
+|       |-- autoscaling/
+|       |-- launch-template/
+|       |-- monitoring/
+|       |-- rds/
+|       |-- security/
+|       |-- sns/
+|       |-- storage/
+|       `-- vpc/
+|-- .gitignore
+`-- README.md
 ```
 
 ## Technologies

@@ -100,3 +100,6 @@ temp/
 
 # Terraform generated plan files without extension
 **/tfplan
+
+# Local documentation backups
+README.backup.md
