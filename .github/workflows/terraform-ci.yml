@@ -1,0 +1,49 @@
+﻿name: Terraform CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform-validation:
+    name: Terraform Format, Validate and Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.17.1"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+
+      - name: Terraform Init
+        working-directory: terraform/environments/dev
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform Validate
+        working-directory: terraform/environments/dev
+        run: terraform validate
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install Checkov
+        run: pip install checkov==3.4.5
+
+      - name: Checkov Security Scan
+        run: checkov -d terraform --framework terraform --soft-fail

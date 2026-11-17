@@ -92,8 +92,8 @@ module "monitoring" {
 module "storage" {
   source = "../../modules/storage"
 
-  project_name = var.project_name
-  environment  = var.environment
-  bucket_suffix = var.bucket_suffix
+  project_name                       = var.project_name
+  environment                        = var.environment
+  bucket_suffix                      = var.bucket_suffix
   noncurrent_version_expiration_days = var.noncurrent_version_expiration_days
 }
